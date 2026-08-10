@@ -823,6 +823,38 @@ bool MpBridge_IsActive()
     return gNet.mode != 0;
 }
 
+void MpBridge_GetLobbyText(char* out, unsigned int outSize)
+{
+    if (!out || outSize == 0) return;
+    out[0] = 0;
+    if (!gNet.mode) { snprintf(out, outSize, "No active Project PM session."); return; }
+
+    unsigned int used = 0;
+    auto append = [&](const char* fmt, const char* name, unsigned int ping) {
+        if (used >= outSize - 1) return;
+        int n = snprintf(out + used, outSize - used, fmt, name, ping);
+        if (n > 0) used += ((unsigned int)n < outSize - used) ? (unsigned int)n : outSize - used - 1;
+    };
+
+    if (gNet.mode == 1)
+        append("Hosting on TCP port 7820\n\n", "", 0);
+    else if (gNet.anyUp())
+        append("Connected to %s\n\n", gNet.joinIP, 0);
+    else
+        append("Connecting to %s...\n\n", gNet.joinIP, 0);
+
+    const int mine = gNet.myRole();
+    const u8 peers = gBr.FreshPeerMask(mine);
+    append("%s (you)\n", gNet.myName, 0);
+    for (int role = 1; role <= 4; role++)
+    {
+        if (role == mine || !(peers & (1u << (role - 1)))) continue;
+        const char* name = gNet.rname[role][0] ? gNet.rname[role] : "Player";
+        if (role == 1) append("%s (host)\n", name, 0);
+        else append("%s - %u ms\n", name, gNet.rping[role]);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Per-frame pump — melonDS BridgePump ported.
 // ---------------------------------------------------------------------------

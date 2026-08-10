@@ -46,6 +46,7 @@ bool MpBridge_StartHost(const char* name);
 bool MpBridge_Join(const char* name, const char* ip);
 void MpBridge_Stop();
 bool MpBridge_IsActive();
+void MpBridge_GetLobbyText(char* out, unsigned int outSize);
 
 // --- LAN lobby UI (Win32) ---
 struct HWND__; typedef struct HWND__* HWND;

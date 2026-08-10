@@ -62,9 +62,9 @@ Linux work is on **`linux-native`**, which is also its default branch.
 The `linux-native` branch is the active native-Linux port. It uses the same
 Project PM mailbox protocol as the Windows build and connects the bridge to
 DeSmuME's GTK frame loop. The **Multiplayer** menu provides native **Host LAN
-Game**, **Join LAN Game**, and **Disconnect** controls. The live player/ping
-lobby is still being ported, and the multiplayer flow needs real two-instance
-testing before this branch is considered a release.
+Game**, **Join LAN Game**, and **Disconnect** controls. Its live lobby shows
+host/connection status, player names, and ping. The multiplayer flow still
+needs real two-instance testing before this branch is considered a release.
 
 Build on Arch-based distributions:
 

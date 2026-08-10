@@ -222,6 +222,7 @@ static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, g
 static void MultiplayerHost(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void MultiplayerJoin(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 static void MultiplayerStop(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void MultiplayerShowLobby();
 
 static const GActionEntry app_entries[] = {
     // File
@@ -556,6 +557,9 @@ static GtkWidget *pStatusBar;
 static GtkWidget *pDrawingArea;
 static GtkWidget *pContentBox;
 static GtkMenu *pPopupMenu;
+static GtkWidget *pMultiplayerLobby;
+static GtkWidget *pMultiplayerLobbyText;
+static guint multiplayerLobbyTimer;
 
 struct nds_screen_t {
     guint gap_size;
@@ -620,9 +624,10 @@ static void MultiplayerHost(GSimpleAction*, GVariant*, gpointer)
     GtkWidget* name = NULL;
     GtkWidget* dialog = MultiplayerEntryDialog("Host Project PM LAN Game", "Player", NULL, &name);
     if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-        if (MpBridge_StartHost(gtk_entry_get_text(GTK_ENTRY(name))))
+        if (MpBridge_StartHost(gtk_entry_get_text(GTK_ENTRY(name)))) {
             UpdateStatusBar("Project PM host started on TCP port 7820.");
-        else
+            MultiplayerShowLobby();
+        } else
             UpdateStatusBar("Could not host Project PM game. Is TCP port 7820 already in use?");
     }
     gtk_widget_destroy(dialog);
@@ -635,9 +640,10 @@ static void MultiplayerJoin(GSimpleAction*, GVariant*, gpointer)
     GtkWidget* dialog = MultiplayerEntryDialog("Join Project PM LAN Game", "Player", "", &name);
     if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
         GtkWidget* ip = GTK_WIDGET(g_object_get_data(G_OBJECT(dialog), "mp-ip"));
-        if (MpBridge_Join(gtk_entry_get_text(GTK_ENTRY(name)), gtk_entry_get_text(GTK_ENTRY(ip))))
+        if (MpBridge_Join(gtk_entry_get_text(GTK_ENTRY(name)), gtk_entry_get_text(GTK_ENTRY(ip)))) {
             UpdateStatusBar("Connecting to Project PM host on TCP port 7820.");
-        else
+            MultiplayerShowLobby();
+        } else
             UpdateStatusBar("Enter a valid IPv4 address, or disconnect the current session first.");
     }
     gtk_widget_destroy(dialog);
@@ -645,8 +651,50 @@ static void MultiplayerJoin(GSimpleAction*, GVariant*, gpointer)
 
 static void MultiplayerStop(GSimpleAction*, GVariant*, gpointer)
 {
+    if (pMultiplayerLobby) gtk_widget_destroy(pMultiplayerLobby);
     MpBridge_Stop();
     UpdateStatusBar("Project PM multiplayer disconnected.");
+}
+
+static gboolean MultiplayerLobbyRefresh(gpointer)
+{
+    if (!pMultiplayerLobby || !MpBridge_IsActive()) return G_SOURCE_REMOVE;
+    char text[512];
+    MpBridge_GetLobbyText(text, sizeof(text));
+    gtk_label_set_text(GTK_LABEL(pMultiplayerLobbyText), text);
+    return G_SOURCE_CONTINUE;
+}
+
+static void MultiplayerLobbyDestroyed(GtkWidget*, gpointer)
+{
+    pMultiplayerLobby = NULL;
+    pMultiplayerLobbyText = NULL;
+    if (multiplayerLobbyTimer) { g_source_remove(multiplayerLobbyTimer); multiplayerLobbyTimer = 0; }
+    if (MpBridge_IsActive()) {
+        MpBridge_Stop();
+        UpdateStatusBar("Project PM multiplayer disconnected.");
+    }
+}
+
+static void MultiplayerShowLobby()
+{
+    if (pMultiplayerLobby) { gtk_window_present(GTK_WINDOW(pMultiplayerLobby)); return; }
+    pMultiplayerLobby = gtk_dialog_new_with_buttons("Project PM Wireless Lobby", GTK_WINDOW(pWindow),
+        (GtkDialogFlags)0, "_Disconnect", GTK_RESPONSE_CLOSE, NULL);
+    GtkWidget* content = gtk_dialog_get_content_area(GTK_DIALOG(pMultiplayerLobby));
+    pMultiplayerLobbyText = gtk_label_new("");
+    gtk_label_set_xalign(GTK_LABEL(pMultiplayerLobbyText), 0.0f);
+    gtk_label_set_yalign(GTK_LABEL(pMultiplayerLobbyText), 0.0f);
+    gtk_widget_set_margin_start(pMultiplayerLobbyText, 14);
+    gtk_widget_set_margin_end(pMultiplayerLobbyText, 14);
+    gtk_widget_set_margin_top(pMultiplayerLobbyText, 14);
+    gtk_widget_set_margin_bottom(pMultiplayerLobbyText, 14);
+    gtk_box_pack_start(GTK_BOX(content), pMultiplayerLobbyText, TRUE, TRUE, 0);
+    g_signal_connect(pMultiplayerLobby, "response", G_CALLBACK(gtk_widget_destroy), NULL);
+    g_signal_connect(pMultiplayerLobby, "destroy", G_CALLBACK(MultiplayerLobbyDestroyed), NULL);
+    gtk_widget_show_all(pMultiplayerLobby);
+    MultiplayerLobbyRefresh(NULL);
+    multiplayerLobbyTimer = g_timeout_add(500, MultiplayerLobbyRefresh, NULL);
 }
 
 static void About(GSimpleAction *action, GVariant *parameter, gpointer user_data)
