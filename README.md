@@ -14,9 +14,14 @@ Based on a DeSmuME 0.9.14 development snapshot.
 - **Wireless lobby UI**: a small in-emulator window showing connected players,
   names and ping while a session is up.
 
-The sibling melonDS port of the same bridge lives at
+The upstream sibling melonDS port of the same bridge lives at
 [ComicartOlie/melonDS-Project-PM](https://github.com/ComicartOlie/melonDS-Project-PM) (branch
 `platinum-mp`).
+
+For native Linux melonDS builds, use [M4doesstuff's Project PM Linux
+port](https://github.com/fdelavega02/melonDS-Project-PM), on its default
+`linux-native` branch. It provides a Linux x86_64 AppImage through its
+[releases](https://github.com/fdelavega02/melonDS-Project-PM/releases).
 
 ## Hosting over the internet
 
@@ -27,16 +32,16 @@ internet, three things must all be true on the **host's** side. Joiners
 never need any of this:
 
 1. **Router port forward**: forward **TCP 7820** to the host PC.
-2. **Windows Firewall**: the router forwards the connection, but Windows
-   still has to accept it. The first time you host, the emulator offers to
-   add the firewall rule for you (one admin prompt, one time). Say yes.
+2. **Host firewall**: the router forwards the connection, but the host OS must
+   still accept it. Windows builds offer to add a firewall rule. On Linux,
+   allow **TCP 7820** using your chosen firewall manager.
 3. **A real public IP**: if your router's WAN address (in its admin page)
    is different from what whatismyip.com shows, or starts with
    100.64-100.127, your ISP has you behind CGNAT and no amount of port
    forwarding will work. Use a VPN like Hamachi/ZeroTier, or have a friend
    with a real IP host.
 
-## Building
+## Building on Windows
 
 Windows, Visual Studio 2022:
 
@@ -44,11 +49,12 @@ Windows, Visual Studio 2022:
 2. Configuration **Release Fastbuild**, platform **x64**
 3. Build. The exe lands in `desmume/src/frontend/windows/__bins/`
 
-## Branch
+## Branches
 
-All fork work is on **`platinum-mp`**.
+Upstream Project PM development is on **`platinum-mp`**. This fork's native
+Linux work is on **`linux-native`**, which is also its default branch.
 
-## Native Linux port status (fdelavega02 fork)
+## Native Linux port status
 
 The `linux-native` branch is the active native-Linux port. It uses the same
 Project PM mailbox protocol as the Windows build and connects the bridge to
