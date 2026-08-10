@@ -10,11 +10,41 @@
     single-threaded — a blocking call here would freeze emulation).
 */
 
+#ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
 #include <commctrl.h>
 #include <shellapi.h>
+#else
+#include <arpa/inet.h>
+#include <cerrno>
+#include <chrono>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+typedef int SOCKET;
+typedef int BOOL;
+typedef unsigned long u_long;
+static const SOCKET INVALID_SOCKET = -1;
+static const int SOCKET_ERROR = -1;
+static const BOOL TRUE = 1;
+static const int WSAEWOULDBLOCK = EWOULDBLOCK;
+static const int WSAEINPROGRESS = EINPROGRESS;
+static const int WSAEISCONN = EISCONN;
+static inline int WSAGetLastError() { return errno; }
+static inline int closesocket(SOCKET s) { return close(s); }
+static inline int ioctlsocket(SOCKET s, long cmd, u_long* value) { return ioctl(s, cmd, value); }
+static inline unsigned long GetTickCount()
+{
+    using namespace std::chrono;
+    return (unsigned long)duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+}
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -64,6 +94,7 @@ const u32 MP_MAX_FRAME = 8192;
 // admin prompt (same repair the PlatinumMP launcher's Fix-Firewall button
 // does for its own exe).
 // ---------------------------------------------------------------------------
+#ifdef _WIN32
 const wchar_t* MP_FW_RULE = L"DeSmuME (Project PM)";
 
 static void mpFwLower(std::wstring& s)
@@ -139,6 +170,11 @@ static void mpEnsureFirewall()
     printf("[BR] firewall rule %s\n",
         ((INT_PTR)rc > 32) ? "repair launched" : "not added (admin prompt declined)");
 }
+#else
+// Linux distributions differ on firewall ownership (ufw, firewalld, nftables).
+// Never mutate host firewall rules silently; document TCP 7820 in the GTK UI.
+static void mpEnsureFirewall() {}
+#endif
 
 struct MpPeer
 {
@@ -486,6 +522,7 @@ int   apRecStarted = 0;
 // melonDS and BizHawk forks.  main.cpp forwards 3 messages.
 // ===========================================================================
 namespace {
+#ifdef _WIN32
 enum { MP_ID_HOST = 0xE100, MP_ID_JOIN, MP_ID_STOP };
 HMENU gMpMenu = NULL;
 struct FoundHost { char ip[32]; char name[28]; u32 seen; };
@@ -707,6 +744,14 @@ bool MpBridge_HandleCommand(unsigned int id)
     }
     return false;
 }
+#else
+// The GTK frontend wires the bridge's environment-controlled startup first.
+// Native Host/Join/Lobby controls are implemented separately in gtk/main.cpp.
+} // namespace
+void MpBridge_InstallMenu(HWND) {}
+void MpBridge_OnInitPopup(HMENU) {}
+bool MpBridge_HandleCommand(unsigned int) { return false; }
+#endif
 
 void MpBridge_InitFromEnv()
 {

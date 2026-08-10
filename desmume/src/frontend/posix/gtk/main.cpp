@@ -46,6 +46,7 @@
 #include "MMU.h"
 #include "render3D.h"
 #include "desmume.h"
+#include "../../windows/mp_bridge.h"
 #include "debug.h"
 #include "rasterize.h"
 #include "saves.h"
@@ -3387,6 +3388,9 @@ common_gtk_main(GApplication *app, gpointer user_data)
         g_application_quit(app);
     }
     desmume_init( my_config->disable_sound || !config.audio_enabled);
+    // Environment startup keeps the Linux bridge compatible with the existing
+    // Project PM test harness while the native GTK Host/Join UI is added.
+    MpBridge_InitFromEnv();
 
     /* Init the hud / osd stuff */
 #ifdef HAVE_LIBAGG

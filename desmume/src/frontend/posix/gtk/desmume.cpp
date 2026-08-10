@@ -26,6 +26,7 @@
 #include "../SPU.h"
 #include "../shared/sndsdl.h"
 #include "../movie.h"
+#include "../../windows/mp_bridge.h"
 
 volatile bool execute = false;
 BOOL click = FALSE;
@@ -41,6 +42,7 @@ void desmume_init( int disable_sound)
 void desmume_free( void)
 {
 	execute = false;
+	MpBridge_Shutdown();
 	NDS_DeInit();
 }
 
@@ -67,6 +69,9 @@ void desmume_cycle( void)
 {
   FCEUMOV_AddInputState();
   NDS_exec<false>();
+  // Project PM bridge runs after the frame has completed, while emulated RAM
+  // is coherent. This matches the Windows frontend integration point.
+  MpBridge_Pump();
   SPU_Emulate_user();
 }
  

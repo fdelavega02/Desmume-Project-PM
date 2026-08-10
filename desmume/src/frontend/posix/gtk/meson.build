@@ -22,6 +22,7 @@ desmume_src = [
   'utilsGTK.cpp',
   'cheatsGTK.cpp',
   'main.cpp',
+  '../../windows/mp_bridge.cpp',
   gresource,
 ]
 

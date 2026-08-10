@@ -48,6 +48,15 @@ Windows, Visual Studio 2022:
 
 All fork work is on **`platinum-mp`**.
 
+## Native Linux port status (fdelavega02 fork)
+
+The `linux-native` branch is the active native-Linux port. Its first milestone
+uses the same Project PM mailbox protocol as the Windows build and connects the
+bridge to DeSmuME's GTK frame loop. It currently supports harness/environment
+startup (`MELONDS_AP=host|join`) while the native GTK Host, Join, and lobby UI
+is being ported. Normal users should treat this branch as in development until
+the multiplayer flow has been tested between real Linux instances.
+
 ## License
 
 DeSmuME is licensed under the **GNU GPL v2**, and so is this fork. All credit for the emulator
