@@ -347,7 +347,14 @@ struct MpNet
                 fd_set wr, ex; FD_ZERO(&wr); FD_ZERO(&ex);
                 FD_SET(h.s, &wr); FD_SET(h.s, &ex);
                 timeval tv = { 0, 0 };
+                // Windows ignores select()'s first argument. POSIX requires
+                // one greater than the largest descriptor, or the writable
+                // connect socket is never observed.
+#ifdef _WIN32
                 int r = select(0, NULL, &wr, &ex, &tv);
+#else
+                int r = select(h.s + 1, NULL, &wr, &ex, &tv);
+#endif
                 if (r > 0 && FD_ISSET(h.s, &wr))
                 {
                     h.up = true; connecting = false; freshPeer = true;
@@ -369,8 +376,13 @@ struct MpNet
                 inet_pton(AF_INET, joinIP, &a.sin_addr);
                 int r = connect(h.s, (sockaddr*)&a, sizeof(a));
                 if (r == 0) { h.up = true; printf("[BR] connected to %s\n", joinIP); }
-                else if (WSAGetLastError() == WSAEWOULDBLOCK) connecting = true;
-                else { dropPeer(0); retryAt = frame + 120; }
+                else {
+                    int err = WSAGetLastError();
+                    // Windows reports WSAEWOULDBLOCK here; POSIX reports
+                    // EINPROGRESS for the same normal non-blocking connect.
+                    if (err == WSAEWOULDBLOCK || err == WSAEINPROGRESS) connecting = true;
+                    else { dropPeer(0); retryAt = frame + 120; }
+                }
             }
         }
 
