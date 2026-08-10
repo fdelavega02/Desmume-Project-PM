@@ -219,6 +219,9 @@ static void ToggleJIT();
 static void JITMaxBlockSizeChanged(GtkAdjustment* adj,void *);
 #endif
 static void GraphicsSettingsDialog(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void MultiplayerHost(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void MultiplayerJoin(GSimpleAction *action, GVariant *parameter, gpointer user_data);
+static void MultiplayerStop(GSimpleAction *action, GVariant *parameter, gpointer user_data);
 
 static const GActionEntry app_entries[] = {
     // File
@@ -290,6 +293,11 @@ static const GActionEntry app_entries[] = {
     { "setfirmwarelanguage", SetFirmwareLanguage },
     { "editctrls",           Edit_Controls },
     { "editjoyctrls",        Edit_Joystick_Controls },
+
+    // Project PM multiplayer
+    { "mp_host",             MultiplayerHost },
+    { "mp_join",             MultiplayerJoin },
+    { "mp_stop",             MultiplayerStop },
 
     // Tools
     // Populated in desmume_gtk_menu_tools().
@@ -571,6 +579,74 @@ static inline void UpdateStatusBar (const char *message)
     pStatusBar_Ctx = gtk_statusbar_get_context_id(GTK_STATUSBAR(pStatusBar), "Global");
     gtk_statusbar_pop(GTK_STATUSBAR(pStatusBar), pStatusBar_Ctx);
     gtk_statusbar_push(GTK_STATUSBAR(pStatusBar), pStatusBar_Ctx, message);
+}
+
+static GtkWidget* MultiplayerEntryDialog(const char* title, const char* name,
+                                         const char* address, GtkWidget** name_entry)
+{
+    GtkWidget* dialog = gtk_dialog_new_with_buttons(title, GTK_WINDOW(pWindow),
+        GTK_DIALOG_MODAL, "_Cancel", GTK_RESPONSE_CANCEL,
+        address ? "_Join" : "_Host Game", GTK_RESPONSE_ACCEPT, NULL);
+    GtkWidget* grid = gtk_grid_new();
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
+    gtk_grid_set_column_spacing(GTK_GRID(grid), 8);
+    gtk_container_set_border_width(GTK_CONTAINER(grid), 12);
+    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), grid, TRUE, TRUE, 0);
+
+    GtkWidget* label = gtk_label_new("Your name:");
+    gtk_widget_set_halign(label, GTK_ALIGN_START);
+    GtkWidget* player = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(player), name ? name : "Player");
+    gtk_grid_attach(GTK_GRID(grid), label, 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), player, 1, 0, 1, 1);
+    if (address) {
+        GtkWidget* ip_label = gtk_label_new("Host IPv4 address:");
+        gtk_widget_set_halign(ip_label, GTK_ALIGN_START);
+        GtkWidget* ip = gtk_entry_new();
+        gtk_entry_set_text(GTK_ENTRY(ip), address);
+        gtk_entry_set_placeholder_text(GTK_ENTRY(ip), "192.168.1.42");
+        gtk_grid_attach(GTK_GRID(grid), ip_label, 0, 1, 1, 1);
+        gtk_grid_attach(GTK_GRID(grid), ip, 1, 1, 1, 1);
+        g_object_set_data(G_OBJECT(dialog), "mp-ip", ip);
+    }
+    *name_entry = player;
+    gtk_widget_show_all(dialog);
+    return dialog;
+}
+
+static void MultiplayerHost(GSimpleAction*, GVariant*, gpointer)
+{
+    if (MpBridge_IsActive()) { UpdateStatusBar("Project PM multiplayer is already active."); return; }
+    GtkWidget* name = NULL;
+    GtkWidget* dialog = MultiplayerEntryDialog("Host Project PM LAN Game", "Player", NULL, &name);
+    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+        if (MpBridge_StartHost(gtk_entry_get_text(GTK_ENTRY(name))))
+            UpdateStatusBar("Project PM host started on TCP port 7820.");
+        else
+            UpdateStatusBar("Could not host Project PM game. Is TCP port 7820 already in use?");
+    }
+    gtk_widget_destroy(dialog);
+}
+
+static void MultiplayerJoin(GSimpleAction*, GVariant*, gpointer)
+{
+    if (MpBridge_IsActive()) { UpdateStatusBar("Project PM multiplayer is already active."); return; }
+    GtkWidget* name = NULL;
+    GtkWidget* dialog = MultiplayerEntryDialog("Join Project PM LAN Game", "Player", "", &name);
+    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+        GtkWidget* ip = GTK_WIDGET(g_object_get_data(G_OBJECT(dialog), "mp-ip"));
+        if (MpBridge_Join(gtk_entry_get_text(GTK_ENTRY(name)), gtk_entry_get_text(GTK_ENTRY(ip))))
+            UpdateStatusBar("Connecting to Project PM host on TCP port 7820.");
+        else
+            UpdateStatusBar("Enter a valid IPv4 address, or disconnect the current session first.");
+    }
+    gtk_widget_destroy(dialog);
+}
+
+static void MultiplayerStop(GSimpleAction*, GVariant*, gpointer)
+{
+    MpBridge_Stop();
+    UpdateStatusBar("Project PM multiplayer disconnected.");
 }
 
 static void About(GSimpleAction *action, GVariant *parameter, gpointer user_data)
@@ -3811,11 +3887,17 @@ common_gtk_main(GApplication *app, gpointer user_data)
     g_simple_action_set_state(G_SIMPLE_ACTION(g_action_map_lookup_action(G_ACTION_MAP(app), "swapscreens")), g_variant_new_boolean(config.view_swap));
 
     builder = gtk_builder_new_from_resource("/org/desmume/DeSmuME/menu.ui");
-    GMenuModel *menubar = G_MENU_MODEL(gtk_builder_get_object(builder, "menubar"));
+    GMenu *menubar = G_MENU(gtk_builder_get_object(builder, "menubar"));
     GMenuModel *open_recent_menu = G_MENU_MODEL(gtk_builder_get_object(builder, "open_recent"));
     savestates_menu = G_MENU_MODEL(gtk_builder_get_object(builder, "savestates"));
     loadstates_menu = G_MENU_MODEL(gtk_builder_get_object(builder, "loadstates"));
     GMenu *config_menu = G_MENU(gtk_builder_get_object(builder, "config"));
+
+    GMenu *multiplayer_menu = g_menu_new();
+    g_menu_append(multiplayer_menu, "_Host LAN Game...", "app.mp_host");
+    g_menu_append(multiplayer_menu, "_Join LAN Game...", "app.mp_join");
+    g_menu_append(multiplayer_menu, "_Disconnect", "app.mp_stop");
+    g_menu_append_submenu(menubar, "_Multiplayer", G_MENU_MODEL(multiplayer_menu));
 
 #ifdef FAKE_MIC
     GMenuItem *mic_noise = g_menu_item_new("Fake mic _noise", "app.micnoise");
@@ -3843,7 +3925,7 @@ common_gtk_main(GApplication *app, gpointer user_data)
     ));
     g_menu_append_submenu(view_menu, "_HUD", hud);
 
-    gtk_application_set_menubar(GTK_APPLICATION(app), menubar);
+    gtk_application_set_menubar(GTK_APPLICATION(app), G_MENU_MODEL(menubar));
 
     GMenu *popup_menu = G_MENU(gtk_builder_get_object(builder, "popup"));
     pPopupMenu = (GtkMenu *) gtk_menu_new_from_model(G_MENU_MODEL(popup_menu));

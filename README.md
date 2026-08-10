@@ -50,12 +50,24 @@ All fork work is on **`platinum-mp`**.
 
 ## Native Linux port status (fdelavega02 fork)
 
-The `linux-native` branch is the active native-Linux port. Its first milestone
-uses the same Project PM mailbox protocol as the Windows build and connects the
-bridge to DeSmuME's GTK frame loop. It currently supports harness/environment
-startup (`MELONDS_AP=host|join`) while the native GTK Host, Join, and lobby UI
-is being ported. Normal users should treat this branch as in development until
-the multiplayer flow has been tested between real Linux instances.
+The `linux-native` branch is the active native-Linux port. It uses the same
+Project PM mailbox protocol as the Windows build and connects the bridge to
+DeSmuME's GTK frame loop. The **Multiplayer** menu provides native **Host LAN
+Game**, **Join LAN Game**, and **Disconnect** controls. The live player/ping
+lobby is still being ported, and the multiplayer flow needs real two-instance
+testing before this branch is considered a release.
+
+Build on Arch-based distributions:
+
+```sh
+sudo pacman -S --needed meson ninja gtk3 sdl2 libpcap
+meson setup build-linux desmume/src/frontend/posix
+ninja -C build-linux
+./build-linux/gtk/desmume
+```
+
+Hosts listen on TCP port 7820. For Internet play, open that port in the host's
+firewall/router, or use a VPN such as Tailscale.
 
 ## License
 

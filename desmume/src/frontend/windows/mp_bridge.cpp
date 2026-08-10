@@ -790,6 +790,39 @@ void MpBridge_Shutdown()
     if (apRecFile) { fclose(apRecFile); apRecFile = NULL; }
 }
 
+bool MpBridge_StartHost(const char* name)
+{
+    if (gNet.mode) return false;
+    gNet.setName(name);
+    gNet.startHost();
+    if (gNet.listener == INVALID_SOCKET) { gNet.mode = 0; return false; }
+    gBr.armed = true;
+    return true;
+}
+
+bool MpBridge_Join(const char* name, const char* ip)
+{
+    if (gNet.mode || !ip || !ip[0]) return false;
+    in_addr address;
+    if (inet_pton(AF_INET, ip, &address) != 1) return false;
+    gNet.setName(name);
+    gNet.joinTo(ip);
+    gBr.armed = true;
+    return true;
+}
+
+void MpBridge_Stop()
+{
+    gNet.shutdownAll();
+    gNet.mode = 0;
+    gBr.armed = false;
+}
+
+bool MpBridge_IsActive()
+{
+    return gNet.mode != 0;
+}
+
 // ---------------------------------------------------------------------------
 // Per-frame pump — melonDS BridgePump ported.
 // ---------------------------------------------------------------------------

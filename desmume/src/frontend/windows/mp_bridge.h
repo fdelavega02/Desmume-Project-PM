@@ -40,6 +40,13 @@ void MpAp_OverrideInput();
 // Close sockets / stop the listener. Call before WSACleanup.
 void MpBridge_Shutdown();
 
+// Frontend-neutral session controls. The GTK frontend uses these directly;
+// the Windows frontend continues to use its existing Win32 menu callbacks.
+bool MpBridge_StartHost(const char* name);
+bool MpBridge_Join(const char* name, const char* ip);
+void MpBridge_Stop();
+bool MpBridge_IsActive();
+
 // --- LAN lobby UI (Win32) ---
 struct HWND__; typedef struct HWND__* HWND;
 struct HMENU__; typedef struct HMENU__* HMENU;
