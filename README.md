@@ -6,6 +6,9 @@ Pokémon Platinum.
 
 Based on a DeSmuME 0.9.14 development snapshot.
 
+This is an in-progress community fork actively maintained by
+**M4doesstuff** and **Hermy**.
+
 ## What's different from stock DeSmuME
 
 - **Embedded multiplayer bridge** (`desmume/src/frontend/windows/mp_bridge.cpp`):
