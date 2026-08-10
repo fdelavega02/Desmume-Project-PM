@@ -2005,12 +2005,23 @@ static u16 LookupGameKey(guint keyval)
   return key;
 }
 
+static void LogGameKeyEvent(const char *type, GdkEventKey *e, u16 key)
+{
+  if (g_getenv("DESMUME_DEBUG_INPUT") == NULL)
+    return;
+
+  const gchar *name = gdk_keyval_name(e->keyval);
+  g_printerr("Project PM input: %s keyval=0x%x (%s) state=0x%x mapped=0x%x\\n",
+             type, e->keyval, name ? name : "unknown", e->state, key);
+}
+
 static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
   guint mask;
   mask = gtk_accelerator_get_default_mod_mask () & ~(GDK_SHIFT_MASK | GDK_LOCK_MASK);
   if( (e->state & mask) == 0){
     u16 Key = LookupGameKey(e->keyval);
+    LogGameKeyEvent("press", e, Key);
     if(Key){
       ADD_KEY( keys_latch, Key );
       return 1;
@@ -2029,6 +2040,7 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
 static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
   u16 Key = LookupGameKey(e->keyval);
+  LogGameKeyEvent("release", e, Key);
   RM_KEY( keys_latch, Key );
   return 1;
 
