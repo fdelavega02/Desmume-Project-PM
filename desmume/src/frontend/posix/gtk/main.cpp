@@ -1994,12 +1994,23 @@ static void MenuSave(GSimpleAction *action, GVariant *parameter, gpointer user_d
     savegame(g_variant_get_uint32(parameter));
 }
 
+// Virtual keyboards frequently emit an uppercase keysym together with Shift,
+// while the default game bindings are lowercase. Normalize both forms so an
+// on-screen X/Z behaves exactly like a physical x/z key.
+static u16 LookupGameKey(guint keyval)
+{
+  u16 key = lookup_key(keyval);
+  if (!key) key = lookup_key(gdk_keyval_to_lower(keyval));
+  if (!key) key = lookup_key(gdk_keyval_to_upper(keyval));
+  return key;
+}
+
 static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
   guint mask;
-  mask = gtk_accelerator_get_default_mod_mask ();
+  mask = gtk_accelerator_get_default_mod_mask () & ~(GDK_SHIFT_MASK | GDK_LOCK_MASK);
   if( (e->state & mask) == 0){
-    u16 Key = lookup_key(e->keyval);
+    u16 Key = LookupGameKey(e->keyval);
     if(Key){
       ADD_KEY( keys_latch, Key );
       return 1;
@@ -2017,7 +2028,7 @@ static gint Key_Press(GtkWidget *w, GdkEventKey *e, gpointer data)
 
 static gint Key_Release(GtkWidget *w, GdkEventKey *e, gpointer data)
 {
-  u16 Key = lookup_key(e->keyval);
+  u16 Key = LookupGameKey(e->keyval);
   RM_KEY( keys_latch, Key );
   return 1;
 
