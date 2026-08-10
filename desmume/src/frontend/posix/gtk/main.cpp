@@ -4336,8 +4336,11 @@ int main (int argc, char *argv[])
       fprintf(stderr, "Warning: X11 not thread-safe\n");
     }
 
-  // TODO: pass G_APPLICATION_HANDLES_COMMAND_LINE instead.
-  GtkApplication *app = gtk_application_new("org.desmume.DeSmuME", G_APPLICATION_HANDLES_OPEN);
+  // Project PM multiplayer needs separate host and join processes on one
+  // machine for localhost testing and local co-op. Do not let GTK/D-Bus route
+  // a second launch into the first emulator instance.
+  GtkApplication *app = gtk_application_new("org.desmume.DeSmuME",
+      (GApplicationFlags)(G_APPLICATION_HANDLES_OPEN | G_APPLICATION_NON_UNIQUE));
   g_signal_connect (app, "activate", G_CALLBACK(common_gtk_main), &my_config);
   g_signal_connect (app, "open", G_CALLBACK(handle_open), &my_config);
   g_action_map_add_action_entries(G_ACTION_MAP(app),
