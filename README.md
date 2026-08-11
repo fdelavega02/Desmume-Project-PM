@@ -11,8 +11,8 @@ This is an in-progress community fork actively maintained by
 
 ## What's different from stock DeSmuME
 
-- **Embedded multiplayer bridge** (`desmume/src/frontend/windows/mp_bridge.cpp`):
-  a TCP host/join transport built into the emulator. One player hosts, up to
+- **Embedded multiplayer bridge**: a TCP host/join transport built into the
+  emulator. One player hosts, up to
   three more join, and the bridge syncs the romhack's multiplayer mailboxes between instance.
 - **Wireless lobby UI**: a small in-emulator window showing connected players,
   names and ping while a session is up.
@@ -36,21 +36,12 @@ never need any of this:
 
 1. **Router port forward**: forward **TCP 7820** to the host PC.
 2. **Host firewall**: the router forwards the connection, but the host OS must
-   still accept it. Windows builds offer to add a firewall rule. On Linux,
-   allow **TCP 7820** using your chosen firewall manager.
+   still accept it. Allow **TCP 7820** using your chosen firewall manager.
 3. **A real public IP**: if your router's WAN address (in its admin page)
    is different from what whatismyip.com shows, or starts with
    100.64-100.127, your ISP has you behind CGNAT and no amount of port
    forwarding will work. Use a VPN like Hamachi/ZeroTier, or have a friend
    with a real IP host.
-
-## Building on Windows
-
-Windows, Visual Studio 2022:
-
-1. Open `desmume/src/frontend/windows/DeSmuME.sln`
-2. Configuration **Release Fastbuild**, platform **x64**
-3. Build. The exe lands in `desmume/src/frontend/windows/__bins/`
 
 ## Branches
 
@@ -59,9 +50,9 @@ Linux work is on **`linux-native`**, which is also its default branch.
 
 ## Native Linux port status
 
-The `linux-native` branch is the active native-Linux port. It uses the same
-Project PM mailbox protocol as the Windows build and connects the bridge to
-DeSmuME's GTK frame loop. The **Multiplayer** menu provides native **Host LAN
+The `linux-native` branch is the active native-Linux port. It uses the
+Project PM mailbox protocol and connects the bridge to DeSmuME's GTK frame
+loop. The **Multiplayer** menu provides native **Host LAN
 Game**, **Join LAN Game**, and **Disconnect** controls. Its live lobby shows
 host/connection status, player names, and ping. Multiplayer has been validated
 with two local instances and with a real remote peer over the internet using a
