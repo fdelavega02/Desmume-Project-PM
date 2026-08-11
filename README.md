@@ -76,6 +76,20 @@ ninja -C build-linux
 ./build-linux/gtk/desmume
 ```
 
+### Launching DeSmuME
+
+After the first build, start the emulator again from the repository root with:
+
+```sh
+./build-linux/gtk/desmume
+```
+
+To open a Project PM ROM directly:
+
+```sh
+./build-linux/gtk/desmume "/path/to/Project PM Multiplayer.nds"
+```
+
 Hosts listen on TCP port 7820. For Internet play, open that port in the host's
 firewall/router, or use a VPN such as Tailscale.
 
