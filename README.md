@@ -79,6 +79,15 @@ ninja -C build-linux
 Hosts listen on TCP port 7820. For Internet play, open that port in the host's
 firewall/router, or use a VPN such as Tailscale.
 
+### Using Project PM multiplayer
+
+Load the same patched Project PM ROM on every player’s emulator. The host
+chooses **Multiplayer → Host LAN Game**, enters a player name, and starts the
+session. Each other player chooses **Multiplayer → Join LAN Game**, enters a
+player name, then supplies the host’s LAN IP, public IP, or Tailscale IP.
+Confirm that each player appears in the Wireless Lobby before using Project
+PM’s in-game Wireless Play feature.
+
 ## License
 
 DeSmuME is licensed under the **GNU GPL v2**, and so is this fork. All credit for the emulator
